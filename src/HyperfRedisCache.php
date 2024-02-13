@@ -12,16 +12,15 @@ declare(strict_types=1);
 namespace Qbhy\HyperfAuth;
 
 use Doctrine\Common\Cache\Cache;
-use Doctrine\Common\Cache\RedisCache;
 use Hyperf\Redis\Redis;
 use Redis as RedisExt;
 
 /**
  * Class HyperfRedisCache.
  */
-class HyperfRedisCache extends RedisCache
+class HyperfRedisCache implements Cache
 {
-    protected ?Redis $redis;
+    public ?Redis $redis;
 
     public function __construct(Redis $redis)
     {
@@ -50,15 +49,12 @@ class HyperfRedisCache extends RedisCache
     /**
      * {@inheritdoc}
      */
-    protected function doFetch($id)
+    public function fetch($id)
     {
         return $this->redis->get($id);
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function doFetchMultiple(array $keys): array | bool
+    public function doFetchMultiple(array $keys): array | bool
     {
         $fetchedItems = array_combine($keys, $this->redis->mget($keys));
 
@@ -80,10 +76,7 @@ class HyperfRedisCache extends RedisCache
         return $fetchedItems;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function doSaveMultiple(array $keysAndValues, $lifetime = 0): bool
+    public function doSaveMultiple(array $keysAndValues, $lifetime = 0): bool
     {
         if ($lifetime) {
             // Keys have lifetime, use SETEX for each of them
@@ -103,7 +96,7 @@ class HyperfRedisCache extends RedisCache
     /**
      * {@inheritdoc}
      */
-    protected function doContains($id): bool
+    public function contains($id): bool
     {
         $exists = $this->redis->exists($id);
 
@@ -117,7 +110,7 @@ class HyperfRedisCache extends RedisCache
     /**
      * {@inheritdoc}
      */
-    protected function doSave($id, $data, $lifeTime = 0): bool
+    public function save($id, $data, $lifeTime = 0): bool
     {
         if ($lifeTime > 0) {
             return $this->redis->setex($id, $lifeTime, $data);
@@ -129,23 +122,17 @@ class HyperfRedisCache extends RedisCache
     /**
      * {@inheritdoc}
      */
-    protected function doDelete($id): bool
+    public function delete($id): bool
     {
         return $this->redis->del($id) >= 0;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function doDeleteMultiple(array $keys): bool
+    public function doDeleteMultiple(array $keys): bool
     {
         return $this->redis->del($keys) >= 0;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function doFlush(): bool
+    public function doFlush(): bool
     {
         return $this->redis->flushDB();
     }
@@ -153,7 +140,7 @@ class HyperfRedisCache extends RedisCache
     /**
      * {@inheritdoc}
      */
-    protected function doGetStats(): ?array
+    public function getStats(): ?array
     {
         $info = $this->redis->info();
 
@@ -168,12 +155,12 @@ class HyperfRedisCache extends RedisCache
 
     /**
      * Returns the serializer constant to use. If Redis is compiled with
-     * igbinary support, that is used. Otherwise the default PHP serializer is
+     * igbinary support, that is used. Otherwise, the default PHP serializer is
      * used.
      *
      * @return int One of the Redis::SERIALIZER_* constants
      */
-    protected function getSerializerValue(): int
+    public function getSerializerValue(): int
     {
         if (defined('Redis::SERIALIZER_IGBINARY') && extension_loaded('igbinary')) {
             return RedisExt::SERIALIZER_IGBINARY;
